@@ -4,6 +4,8 @@ from fractions import Fraction
 from multiprocessing import Pool
 from threading import Semaphore
 
+from clopure.exceptions import ClopureRuntimeError
+
 
 def input_semaphore_hook(g, s):
     for x in g:
@@ -77,7 +79,7 @@ class ClopureRunner(object):
                 return self.evaluate(local_vars[symbol], local_vars=local_vars)
             if symbol in self.core_functions:
                 return self.core_functions[symbol]
-            raise Exception("%s is not defined" % symbol)
+            raise ClopureRuntimeError("%s is not defined" % symbol)
         if isinstance(node, tuple):
             fn = self.evaluate(node[0], local_vars=local_vars)
             if isinstance(fn, ClopureFunction):
@@ -92,7 +94,7 @@ class ClopureRunner(object):
             if callable(fn):
                 eval_args = [self.evaluate(arg, local_vars=local_vars) for arg in node[1:]]
                 return fn(*eval_args)
-            raise Exception("%s is not a function" % str(fn))
+            raise ClopureRuntimeError("%s is not a function" % str(fn))
         if isinstance(node, list):
             return [self.evaluate(item, local_vars=local_vars) for item in node]
         return node
@@ -105,89 +107,89 @@ class ClopureRunner(object):
     def clopure_import(self, *args, local_vars):
         for arg in args:
             if not isinstance(arg, ClopureSymbol):
-                raise Exception("%s is not a symbol" % arg)
+                raise ClopureRuntimeError("%s is not a symbol" % arg)
         if len(args) == 1:
             return __import__(args[0].symbol)
         elif len(args) == 2:
             return getattr(__import__(args[0].symbol, fromlist=[args[1].symbol]), args[1].symbol)
         else:
-            raise Exception("import takes 1 or 2 arguments")
+            raise ClopureRuntimeError("import takes 1 or 2 arguments")
 
 
     def clopure_defimport(self, *args, local_vars):
         for arg in args:
             if not isinstance(arg, ClopureSymbol):
-                raise Exception("%s is not a symbol" % arg)
+                raise ClopureRuntimeError("%s is not a symbol" % arg)
         if len(args) == 1:
             self.global_vars[args[0].symbol] = __import__(args[0].symbol)
         elif len(args) == 2:
             self.global_vars[args[1].symbol] = getattr(__import__(args[0].symbol, fromlist=[args[1].symbol]), args[1].symbol)
         else:
-            raise Exception("defimport takes 1 or 2 arguments")
+            raise ClopureRuntimeError("defimport takes 1 or 2 arguments")
 
 
     def clopure_defimport_as(self, *args, local_vars):
         for arg in args:
             if not isinstance(arg, ClopureSymbol):
-                raise Exception("%s is not a symbol" % arg)
+                raise ClopureRuntimeError("%s is not a symbol" % arg)
         if len(args) == 2:
             self.global_vars[args[0].symbol] = __import__(args[1].symbol)
         elif len(args) == 3:
             self.global_vars[args[0].symbol] = getattr(__import__(args[1].symbol, fromlist=[args[2].symbol]), args[2].symbol)
         else:
-            raise Exception("defimport-as takes 2 or 3 arguments")
+            raise ClopureRuntimeError("defimport-as takes 2 or 3 arguments")
 
 
     def clopure_def(self, *args, local_vars):
         if len(args) != 2:
-            raise Exception("def takes 2 arguments")
+            raise ClopureRuntimeError("def takes 2 arguments")
         if not isinstance(args[0], ClopureSymbol):
-            raise Exception("%s is not a symbol" % str(args[0]))
+            raise ClopureRuntimeError("%s is not a symbol" % str(args[0]))
         self.global_vars[args[0].symbol] = self.evaluate(args[1], local_vars=local_vars)
 
 
     def clopure_fn(self, *args, local_vars):
         if len(args) == 2:
             if not isinstance(args[0], list):
-                raise Exception("the first argument must be a vector")
+                raise ClopureRuntimeError("the first argument must be a vector")
             for arg in args[0]:
                 if not isinstance(arg, ClopureSymbol):
-                    raise Exception("%s is not a symbol" % str(arg))
+                    raise ClopureRuntimeError("%s is not a symbol" % str(arg))
             return ClopureFunction(args[0], args[1])
         elif len(args) == 3:
             if not isinstance(args[0], ClopureSymbol):
-                raise Exception("%s is not a symbol" % str(args[0]))
+                raise ClopureRuntimeError("%s is not a symbol" % str(args[0]))
             if not isinstance(args[1], list):
-                raise Exception("the second argument must be a vector")
+                raise ClopureRuntimeError("the second argument must be a vector")
             for arg in args[1]:
                 if not isinstance(arg, ClopureSymbol):
-                    raise Exception("%s is not a symbol" % str(arg))
+                    raise ClopureRuntimeError("%s is not a symbol" % str(arg))
             return ClopureFunction(args[1], args[2], name=args[0].symbol)
-        raise Exception("fn takes 2 or 3 arguments")
+        raise ClopureRuntimeError("fn takes 2 or 3 arguments")
 
 
     def clopure_defn(self, *args, local_vars):
         if len(args) != 3:
-            raise Exception("fn takes 3 arguments")
+            raise ClopureRuntimeError("fn takes 3 arguments")
         if not isinstance(args[0], ClopureSymbol):
-            raise Exception("%s is not a symbol" % str(args[0]))
+            raise ClopureRuntimeError("%s is not a symbol" % str(args[0]))
         if not isinstance(args[1], list):
-            raise Exception("the first argument must be a vector")
+            raise ClopureRuntimeError("the first argument must be a vector")
         for arg in args[1]:
             if not isinstance(arg, ClopureSymbol):
-                raise Exception("%s is not a symbol" % str(arg))
+                raise ClopureRuntimeError("%s is not a symbol" % str(arg))
         self.global_vars[args[0].symbol] = ClopureFunction(args[1], args[2])
 
 
     def clopure_quote(self, *args, local_vars):
         if len(args) != 1:
-            raise Exception("quote takes just 1 argument")
+            raise ClopureRuntimeError("quote takes just 1 argument")
         return args[0]
 
 
     def clopure_eval(self, *args, local_vars):
         if len(args) != 1:
-            raise Exception("eval takes just 1 argument")
+            raise ClopureRuntimeError("eval takes just 1 argument")
         return self.evaluate(self.evaluate(args[0], local_vars=local_vars),
                         local_vars=local_vars)
 
@@ -200,7 +202,7 @@ class ClopureRunner(object):
             if len(args) == 3:
                 return self.evaluate(args[2], local_vars=local_vars)
             return None
-        raise Exception("if takes 2 or 3 arguments")
+        raise ClopureRuntimeError("if takes 2 or 3 arguments")
 
 
     def clopure_do(self, *args, local_vars):
@@ -212,16 +214,16 @@ class ClopureRunner(object):
 
     def clopure_doseq(self, *args, local_vars):
         if len(args) != 2:
-            raise Exception("doesq takes 2 arguments")
+            raise ClopureRuntimeError("doesq takes 2 arguments")
         if not isinstance(args[0], list):
-            raise Exception("the second argument must be a vector")
+            raise ClopureRuntimeError("the second argument must be a vector")
         if len(args[0]) % 2 != 0:
-            raise Exception("the second argument must contain even number of forms")
+            raise ClopureRuntimeError("the second argument must contain even number of forms")
         keys = []
         vals = []
         for i in range(0, len(args[0]), 2):
             if not isinstance(args[0][i], ClopureSymbol):
-                raise Exception("%s is not a symbol" % str(args[0][i]))
+                raise ClopureRuntimeError("%s is not a symbol" % str(args[0][i]))
             keys.append(args[0][i])
             vals.append(args[0][i + 1])
         def doseq_loop(func, keys, vals, chosen):
@@ -239,14 +241,14 @@ class ClopureRunner(object):
 
     def clopure_map(self, *args, local_vars):
         if len(args) <= 1:
-            raise Exception("map takes at least 2 arguments")
+            raise ClopureRuntimeError("map takes at least 2 arguments")
         seqs = [self.evaluate(arg, local_vars=local_vars) for arg in args[1:]]
         return (self.evaluate((args[0],) + x, local_vars=local_vars) for x in zip(*seqs))
 
 
     def clopure_pmap(self, *args, local_vars):
         if len(args) <= 1:
-            raise Exception("pmap takes at least 2 arguments")
+            raise ClopureRuntimeError("pmap takes at least 2 arguments")
         seqs = [self.evaluate(arg, local_vars=local_vars) for arg in args[1:]]
         p = Pool(self.threads)
         s = Semaphore(self.queue_size)
@@ -256,7 +258,7 @@ class ClopureRunner(object):
 
     def clopure_pmap_unord(self, *args, local_vars):
         if len(args) <= 1:
-            raise Exception("pmap-unord takes at least 2 arguments")
+            raise ClopureRuntimeError("pmap-unord takes at least 2 arguments")
         seqs = [self.evaluate(arg, local_vars=local_vars) for arg in args[1:]]
         p = Pool(self.threads)
         s = Semaphore(self.queue_size)
@@ -266,7 +268,7 @@ class ClopureRunner(object):
 
     def clopure_add(self, *args, local_vars):
         if len(args) == 0:
-            raise Exception("* takes at least 1 argument")
+            raise ClopureRuntimeError("* takes at least 1 argument")
         s = self.evaluate(args[0], local_vars=local_vars)
         for x in args[1:]:
             s += self.evaluate(x, local_vars=local_vars)
@@ -275,7 +277,7 @@ class ClopureRunner(object):
 
     def clopure_sub(self, *args, local_vars):
         if len(args) == 0:
-            raise Exception("- takes at least 1 argument")
+            raise ClopureRuntimeError("- takes at least 1 argument")
         s = self.evaluate(args[0], local_vars=local_vars)
         if len(args) == 1:
             return -s
@@ -286,7 +288,7 @@ class ClopureRunner(object):
 
     def clopure_mul(self, *args, local_vars):
         if len(args) == 0:
-            raise Exception("* takes at least 1 argument")
+            raise ClopureRuntimeError("* takes at least 1 argument")
         s = self.evaluate(args[0], local_vars=local_vars)
         for x in args[1:]:
             s *= self.evaluate(x, local_vars=local_vars)
@@ -295,7 +297,7 @@ class ClopureRunner(object):
 
     def clopure_div(self, *args, local_vars):
         if len(args) == 0:
-            raise Exception("/ takes at least 1 argument")
+            raise ClopureRuntimeError("/ takes at least 1 argument")
         s = self.evaluate(args[0], local_vars=local_vars)
         if len(args) == 1:
             return Fraction(1) / s
@@ -308,17 +310,17 @@ class ClopureRunner(object):
 
     def clopure_eq(self, *args, local_vars):
         if len(args) != 2:
-            raise Exception("= takes 2 arguments")
+            raise ClopureRuntimeError("= takes 2 arguments")
         return self.evaluate(args[0], local_vars=local_vars) \
             == self.evaluate(args[1], local_vars=local_vars)
 
 
     def clopure_member(self, *args, local_vars):
         if len(args) == 0:
-            raise Exception(". takes at least 1 argument")
+            raise ClopureRuntimeError(". takes at least 1 argument")
         obj = self.evaluate(args[0], local_vars=local_vars)
         for arg in args[1:]:
             if not isinstance(arg, ClopureSymbol):
-                raise Exception("%s is not a symbol" % str(arg))
+                raise ClopureRuntimeError("%s is not a symbol" % str(arg))
             obj = getattr(obj, arg.symbol)
         return obj
