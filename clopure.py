@@ -6,7 +6,7 @@ import readline
 import core
 
 
-clopure_token = re.compile(r"\(|\)|\[|\]|\{|\}|\#\{|\#\(|'|\".+(?<!\\)\"|;|[^\s,\(\)\[\]\{\}\#'\";]+")
+clopure_token = re.compile(r"\(|\)|\[|\]|\{|\}|\#\{|\#\(|'|\".+?(?<!\\)\"|;|[^\s,\(\)\[\]\{\}\#'\";]+")
 clopure_sep = re.compile(r"^[\s,]*$")
 
 
@@ -62,7 +62,7 @@ class ClopureParser(object):
             elif token == "}":
                 node = self.stack.pop()
                 if node[0] == "dict":
-                    if len(node[1]) % 2 == 0:
+                    if len(node[1]) % 2 != 0:
                         raise Exception("Syntax error")
                     self.stack[-1][1].append({node[1][i]: node[1][i + 1] for i in range(0, len(node[1]), 2)})
                 elif node[0] == "set":
