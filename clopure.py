@@ -10,14 +10,6 @@ clopure_token = re.compile(r"\(|\)|\[|\]|\{|\}|\#\{|\#\(|'|\".+?(?<!\\)\"|;|[^\s
 clopure_sep = re.compile(r"^[\s,]*$")
 
 
-class ClopureRunner(object):
-    def __init__(self):
-        self.global_vars = {}
-
-    def evaluate(self, node):
-        return core.evaluate(node, global_vars=self.global_vars, local_vars={})
-
-
 class ClopureParser(object):
     def __init__(self):
         self.stack = [(None, [])]
@@ -89,7 +81,7 @@ class ClopureParser(object):
 
 def main():
     clparser = ClopureParser()
-    runner = ClopureRunner()
+    runner = core.ClopureRunner()
 
     while True:
         try:
