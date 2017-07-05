@@ -7,6 +7,7 @@ from fractions import Fraction
 from multiprocessing import Pool, Semaphore, Process, Pipe, Queue, Lock
 from threading import Thread
 
+from clopure import extras
 from clopure.exceptions import ClopureRuntimeError
 
 
@@ -88,6 +89,8 @@ class ClopureRunner(object):
                 return self.evaluate(local_vars[symbol], local_vars=local_vars)
             if symbol in self.core_functions:
                 return self.core_functions[symbol]
+            if symbol in extras.functions:
+                return extras.functions[symbol]
             raise ClopureRuntimeError("%s is not defined" % symbol)
         if isinstance(node, tuple):
             fn = self.evaluate(node[0], local_vars=local_vars)
