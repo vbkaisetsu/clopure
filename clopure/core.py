@@ -1,5 +1,7 @@
 import collections
 import itertools
+import traceback
+import sys
 
 from fractions import Fraction
 from multiprocessing import Pool, Semaphore, Process, Pipe, Queue, Lock
@@ -115,13 +117,16 @@ class ClopureRunner(object):
         l = Lock()
         idx_q = Queue()
         def split_iter():
-            while True:
-                l.acquire()
-                i, data_in = q_in.get()
-                idx_q.put(i)
-                if data_in is EOFMessage:
-                    return
-                yield data_in
+            try:
+                while True:
+                    l.acquire()
+                    i, data_in = q_in.get()
+                    idx_q.put(i)
+                    if data_in is EOFMessage:
+                        return
+                    yield data_in
+            except BaseException:
+                traceback.print_exc(file=sys.stdout)
         gs = itertools.tee(split_iter(), in_size)
         for data_out in self.evaluate((fn,) + tuple((lambda i: (x[i] for x in gs[i]))(i) for i in range(in_size)), local_vars=local_vars):
             q_out.put((idx_q.get(), data_out))
@@ -304,11 +309,14 @@ class ClopureRunner(object):
             for p in ps:
                 p.start()
             def input_thread():
-                for i, item in enumerate(zip(*g)):
-                    semaphore.acquire()
-                    if exit_input_thread:
-                        return
-                    q_in.put((i, item))
+                try:
+                    for i, item in enumerate(zip(*g)):
+                        semaphore.acquire()
+                        if exit_input_thread:
+                            return
+                        q_in.put((i, item))
+                except BaseException:
+                    traceback.print_exc(file=sys.stdout)
                 for i in range(self.threads):
                     q_in.put((0, EOFMessage))
 
@@ -348,11 +356,14 @@ class ClopureRunner(object):
             for p in ps:
                 p.start()
             def input_thread():
-                for i, item in enumerate(zip(*g)):
-                    semaphore.acquire()
-                    if exit_input_thread:
-                        return
-                    q_in.put((i, item))
+                try:
+                    for i, item in enumerate(zip(*g)):
+                        semaphore.acquire()
+                        if exit_input_thread:
+                            return
+                        q_in.put((i, item))
+                except BaseException:
+                    traceback.print_exc(file=sys.stdout)
                 for i in range(self.threads):
                     q_in.put((0, EOFMessage))
             t = Thread(target=input_thread)
