@@ -1,8 +1,9 @@
 import collections
+import itertools
 
 from fractions import Fraction
-from multiprocessing import Pool
-from threading import Semaphore
+from multiprocessing import Pool, Semaphore, Process, Pipe, Queue, Lock
+from threading import Thread
 
 from clopure.exceptions import ClopureRuntimeError
 
@@ -39,6 +40,10 @@ class ClopureSymbol(object):
         return self.symbol == v.symbol
 
 
+class EOFMessage(object):
+    pass
+
+
 class ClopureRunner(object):
     def __init__(self, threads=1, queue_size=100):
         self.global_vars = {}
@@ -61,6 +66,8 @@ class ClopureRunner(object):
             "map": self.clopure_map,
             "pmap": self.clopure_pmap,
             "pmap-unord": self.clopure_pmap_unord,
+            "iter-split": self.clopure_iter_split,
+            "iter-split-unord": self.clopure_iter_split_unord,
             "+": self.clopure_add,
             "-": self.clopure_sub,
             "*": self.clopure_mul,
@@ -102,6 +109,24 @@ class ClopureRunner(object):
 
     def mp_evaluate_wrapper(self, x):
         return self.evaluate(x[0], local_vars=x[1])
+
+
+    def iter_split_evaluate_wrapper(self, fn, local_vars, in_size, q_in, q_out):
+        l = Lock()
+        idx_q = Queue()
+        def split_iter():
+            while True:
+                l.acquire()
+                i, data_in = q_in.get()
+                idx_q.put(i)
+                if data_in is EOFMessage:
+                    return
+                yield data_in
+        gs = itertools.tee(split_iter(), in_size)
+        for data_out in self.evaluate((fn,) + tuple((lambda i: (x[i] for x in gs[i]))(i) for i in range(in_size)), local_vars=local_vars):
+            q_out.put((idx_q.get(), data_out))
+            l.release()
+        q_out.put((0, EOFMessage))
 
 
     def clopure_import(self, *args, local_vars):
@@ -264,6 +289,89 @@ class ClopureRunner(object):
         s = Semaphore(self.queue_size)
         input_iter = (((args[0],) + x, local_vars) for x in input_semaphore_hook(zip(*seqs), s))
         return output_semaphore_hook(p.imap_unordered(self.mp_evaluate_wrapper, input_iter), s)
+
+
+    def clopure_iter_split(self, *args, local_vars):
+        if len(args) != 1:
+            raise ClopureRuntimeError("iter-split takes 1 argument")
+        fn = args[0]
+        def iter_split_generator(*g):
+            q_in = Queue()
+            q_out = Queue()
+            exit_input_thread = False
+            semaphore = Semaphore(self.queue_size)
+            ps = [Process(target=self.iter_split_evaluate_wrapper, args=(fn, local_vars, len(g), q_in, q_out)) for i in range(self.threads)]
+            for p in ps:
+                p.start()
+            def input_thread():
+                for i, item in enumerate(zip(*g)):
+                    semaphore.acquire()
+                    if exit_input_thread:
+                        return
+                    q_in.put((i, item))
+                for i in range(self.threads):
+                    q_in.put((0, EOFMessage))
+
+            t = Thread(target=input_thread)
+            t.start()
+            cur = 0
+            n_working_threads = self.threads
+            l = [None] * self.queue_size
+            while True:
+                k, data = q_out.get()
+                if data is EOFMessage:
+                    n_working_threads -= 1
+                    if n_working_threads == 0:
+                        break
+                    continue
+                l[k - cur] = (k, data)
+                while l[0]:
+                    yield l.pop(0)[1]
+                    l.append(None)
+                    cur += 1
+                    semaphore.release()
+            exit_input_thread = True
+            semaphore.release()
+        return iter_split_generator
+
+
+    def clopure_iter_split_unord(self, *args, local_vars):
+        if len(args) != 1:
+            raise ClopureRuntimeError("iter-split-unord takes 1 argument")
+        fn = args[0]
+        def iter_split_generator(*g):
+            q_in = Queue()
+            q_out = Queue()
+            exit_input_thread = False
+            semaphore = Semaphore(self.queue_size)
+            ps = [Process(target=self.iter_split_evaluate_wrapper, args=(fn, local_vars, len(g), q_in, q_out)) for i in range(self.threads)]
+            for p in ps:
+                p.start()
+            def input_thread():
+                for i, item in enumerate(zip(*g)):
+                    semaphore.acquire()
+                    if exit_input_thread:
+                        return
+                    q_in.put((i, item))
+                for i in range(self.threads):
+                    q_in.put((0, EOFMessage))
+            t = Thread(target=input_thread)
+            t.start()
+            n_working_threads = self.threads
+            while True:
+                k, data = q_out.get()
+                if data is EOFMessage:
+                    n_working_threads -= 1
+                    if n_working_threads == 0:
+                        break
+                    continue
+                yield data
+                semaphore.release()
+            for p in ps:
+                p.join()
+            exit_input_thread = True
+            semaphore.release()
+        return iter_split_generator
 
 
     def clopure_add(self, *args, local_vars):
