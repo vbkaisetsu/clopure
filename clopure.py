@@ -27,6 +27,7 @@ def main():
     else:
         stream = sys.stdin
 
+    linenum = 0
     while True:
         if not args.FILE and sys.stdin.isatty():
             try:
@@ -37,13 +38,18 @@ def main():
             except EOFError:
                 print()
                 break
+            except KeyboardInterrupt:
+                print("(KeyboardInterrupt)", file=sys.stdout)
+                continue
         else:
             line = stream.readline()
+            linenum += 1
             if not line:
                 break
         try:
             trees = clparser.parse_line(line)
         except ClopureSyntaxError as e:
+            print("At line %d:" % linenum, file=sys.stdout)
             print("Syntax error: %s" % str(e), file=sys.stdout)
             print(line, file=sys.stdout)
             print(" " * e.pos + "^", file=sys.stdout)
@@ -55,9 +61,23 @@ def main():
                 if not args.FILE and sys.stdin.isatty():
                     print(result)
         except ClopureRuntimeError as e:
+            if args.FILE or not sys.stdin.isatty():
+                print("At line %d:" % linenum, file=sys.stdout)
             print("ClopureRuntimeError: %s" % str(e), file=sys.stdout)
+            if args.FILE or not sys.stdin.isatty():
+                break
         except Exception:
+            if args.FILE or not sys.stdin.isatty():
+                print("At line %d:" % linenum, file=sys.stdout)
             traceback.print_exc(file=sys.stdout)
+            if args.FILE or not sys.stdin.isatty():
+                break
+        except KeyboardInterrupt:
+            if args.FILE or not sys.stdin.isatty():
+                print("At line %d:" % linenum, file=sys.stdout)
+            print("(KeyboardInterrupt)", file=sys.stdout)
+            if args.FILE or not sys.stdin.isatty():
+                break
     if not clparser.is_empty():
         print("Syntax error: Form is not closed", file=sys.stdout)
 
