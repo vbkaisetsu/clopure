@@ -66,6 +66,7 @@ class ClopureRunner(object):
             "if": self.clopure_if,
             "do": self.clopure_do,
             "doseq": self.clopure_doseq,
+            "dorun": self.clopure_dorun,
             "map": self.clopure_map,
             "pmap": self.clopure_pmap,
             "pmap-unord": self.clopure_pmap_unord,
@@ -270,6 +271,13 @@ class ClopureRunner(object):
             for v in seq:
                 doseq_loop(func, keys, vals[1:], chosen + [v])
         doseq_loop(args[1], keys, vals, [])
+
+
+    def clopure_dorun(self, *args, local_vars):
+        if len(args) != 1:
+            raise ClopureRuntimeError("dorun takes 1 argument")
+        for item in self.evaluate(args[0], local_vars=local_vars):
+            self.evaluate(item, local_vars=local_vars)
 
 
     def clopure_map(self, *args, local_vars):

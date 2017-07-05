@@ -1,6 +1,6 @@
 (defimport-as infcount itertools count)
 
-(list
+(dorun
   (map #(print ((. % decode) "utf-8"))
         ((iter-split
             #(system-map "python3 test.py" %))
