@@ -298,6 +298,8 @@ class ClopureRunner(object):
             g = self.evaluate(args[2], local_vars=local_vars)
         elif len(args) == 2:
             g = self.evaluate(args[1], local_vars=local_vars)
+        else:
+            raise ClopureRuntimeError("reduce takes 2 or 3 arguments")
         for item in g:
             if len(reduce_args) == 2:
                 reduce_args = [self.evaluate((args[0],) + tuple(reduce_args), local_vars=local_vars)]
