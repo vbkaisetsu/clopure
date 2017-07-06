@@ -81,14 +81,8 @@ class ClopureRunner(object):
             "take-while": self.clopure_take_while,
             "pmap": self.clopure_pmap,
             "pmap-unord": self.clopure_pmap_unord,
-            "iter-split": self.clopure_iter_split,
-            "iter-split-unord": self.clopure_iter_split_unord,
-            "+": self.clopure_add,
-            "-": self.clopure_sub,
-            "*": self.clopure_mul,
-            "/": self.clopure_div,
-            "mod": self.clopure_mod,
-            "=": self.clopure_eq,
+            "iter-mp-split": self.clopure_iter_mp_split,
+            "iter-mp-split-unord": self.clopure_iter_mp_split_unord,
             "and": self.clopure_and,
             "or": self.clopure_or,
             ".": self.clopure_member,
@@ -378,7 +372,7 @@ class ClopureRunner(object):
         return output_semaphore_hook(p.imap_unordered(self.mp_evaluate_wrapper, input_iter), s)
 
 
-    def clopure_iter_split(self, *args, local_vars):
+    def clopure_iter_mp_split(self, *args, local_vars):
         if len(args) != 1:
             raise ClopureRuntimeError("iter-split takes 1 argument")
         fn = args[0]
@@ -425,7 +419,7 @@ class ClopureRunner(object):
         return iter_split_generator
 
 
-    def clopure_iter_split_unord(self, *args, local_vars):
+    def clopure_iter_mp_split_unord(self, *args, local_vars):
         if len(args) != 1:
             raise ClopureRuntimeError("iter-split-unord takes 1 argument")
         fn = args[0]
@@ -465,61 +459,6 @@ class ClopureRunner(object):
             exit_input_thread = True
             semaphore.release()
         return iter_split_generator
-
-
-    def clopure_add(self, *args, local_vars):
-        if len(args) == 0:
-            return 0
-        s = self.evaluate(args[0], local_vars=local_vars)
-        for x in args[1:]:
-            s += self.evaluate(x, local_vars=local_vars)
-        return s
-
-
-    def clopure_sub(self, *args, local_vars):
-        if len(args) == 0:
-            raise ClopureRuntimeError("- takes at least 1 argument")
-        s = self.evaluate(args[0], local_vars=local_vars)
-        if len(args) == 1:
-            return -s
-        for x in args[1:]:
-            s -= self.evaluate(x, local_vars=local_vars)
-        return s
-
-
-    def clopure_mul(self, *args, local_vars):
-        if len(args) == 0:
-            return 1
-        s = self.evaluate(args[0], local_vars=local_vars)
-        for x in args[1:]:
-            s *= self.evaluate(x, local_vars=local_vars)
-        return s
-
-
-    def clopure_div(self, *args, local_vars):
-        if len(args) == 0:
-            raise ClopureRuntimeError("/ takes at least 1 argument")
-        s = self.evaluate(args[0], local_vars=local_vars)
-        if len(args) == 1:
-            return Fraction(1) / s
-        if isinstance(s, int):
-            s = Fraction(s)
-        for x in args[1:]:
-            s /= self.evaluate(x, local_vars=local_vars)
-        return s
-
-
-    def clopure_mod(self, *args, local_vars):
-        if len(args) != 2:
-            raise ClopureRuntimeError("mod takes 2 arguments")
-        return self.evaluate(args[0], local_vars=local_vars) % self.evaluate(args[1], local_vars=local_vars)
-
-
-    def clopure_eq(self, *args, local_vars):
-        if len(args) != 2:
-            raise ClopureRuntimeError("= takes 2 arguments")
-        return self.evaluate(args[0], local_vars=local_vars) \
-            == self.evaluate(args[1], local_vars=local_vars)
 
 
     def clopure_and(self, *args, local_vars):
