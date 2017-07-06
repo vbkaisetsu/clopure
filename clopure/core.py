@@ -47,6 +47,11 @@ class EOFMessage(object):
     pass
 
 
+class ReducedObject(object):
+    def __init__(self, value):
+        self.value = value
+
+
 class ClopureRunner(object):
     def __init__(self, threads=1, queue_size=100):
         self.global_vars = {}
@@ -69,6 +74,7 @@ class ClopureRunner(object):
             "dorun": self.clopure_dorun,
             "map": self.clopure_map,
             "reduce": self.clopure_reduce,
+            "reduced": self.clopure_reduced,
             "filter": self.clopure_filter,
             "remove": self.clopure_remove,
             "pmap": self.clopure_pmap,
@@ -302,9 +308,21 @@ class ClopureRunner(object):
             raise ClopureRuntimeError("reduce takes 2 or 3 arguments")
         for item in g:
             if len(reduce_args) == 2:
-                reduce_args = [self.evaluate((args[0],) + tuple(reduce_args), local_vars=local_vars)]
+                result = self.evaluate((args[0],) + tuple(reduce_args), local_vars=local_vars)
+                if isinstance(result, ReducedObject):
+                    return result.value
+                reduce_args = [result]
             reduce_args.append(item)
-        return self.evaluate((args[0],) + tuple(reduce_args), local_vars=local_vars)
+        result = self.evaluate((args[0],) + tuple(reduce_args), local_vars=local_vars)
+        if isinstance(result, ReducedObject):
+            return result.value
+        return result
+
+
+    def clopure_reduced(self, *args, local_vars):
+        if len(args) != 1:
+            raise ClopureRuntimeError("reduced takes 1 argument")
+        return ReducedObject(args[0])
 
 
     def clopure_filter(self, *args, local_vars):
