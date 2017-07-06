@@ -23,4 +23,5 @@ functions = {
     "print": print,
     "list": list,
     "tuple": tuple,
+    "range": range,
 }

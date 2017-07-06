@@ -68,6 +68,9 @@ class ClopureRunner(object):
             "doseq": self.clopure_doseq,
             "dorun": self.clopure_dorun,
             "map": self.clopure_map,
+            "reduce": self.clopure_reduce,
+            "filter": self.clopure_filter,
+            "remove": self.clopure_remove,
             "pmap": self.clopure_pmap,
             "pmap-unord": self.clopure_pmap_unord,
             "iter-split": self.clopure_iter_split,
@@ -76,6 +79,7 @@ class ClopureRunner(object):
             "-": self.clopure_sub,
             "*": self.clopure_mul,
             "/": self.clopure_div,
+            "mod": self.clopure_mod,
             "=": self.clopure_eq,
             ".": self.clopure_member,
         }
@@ -287,6 +291,34 @@ class ClopureRunner(object):
         return (self.evaluate((args[0],) + x, local_vars=local_vars) for x in zip(*seqs))
 
 
+    def clopure_reduce(self, *args, local_vars):
+        reduce_args = []
+        if len(args) == 3:
+            reduce_args.append(args[1])
+            g = self.evaluate(args[2], local_vars=local_vars)
+        elif len(args) == 2:
+            g = self.evaluate(args[1], local_vars=local_vars)
+        for item in g:
+            if len(reduce_args) == 2:
+                reduce_args = [self.evaluate((args[0],) + tuple(reduce_args), local_vars=local_vars)]
+            reduce_args.append(item)
+        return self.evaluate((args[0],) + tuple(reduce_args), local_vars=local_vars)
+
+
+    def clopure_filter(self, *args, local_vars):
+        if len(args) != 2:
+            raise ClopureRuntimeError("filter takes 2 arguments")
+        seq = self.evaluate(args[1], local_vars=local_vars)
+        return (x for x in seq if self.evaluate((args[0], x), local_vars=local_vars))
+
+
+    def clopure_remove(self, *args, local_vars):
+        if len(args) != 2:
+            raise ClopureRuntimeError("remove takes 2 arguments")
+        seq = self.evaluate(args[1], local_vars=local_vars)
+        return (x for x in seq if not self.evaluate((args[0], x), local_vars=local_vars))
+
+
     def clopure_pmap(self, *args, local_vars):
         if len(args) <= 1:
             raise ClopureRuntimeError("pmap takes at least 2 arguments")
@@ -398,7 +430,7 @@ class ClopureRunner(object):
 
     def clopure_add(self, *args, local_vars):
         if len(args) == 0:
-            raise ClopureRuntimeError("* takes at least 1 argument")
+            return 0
         s = self.evaluate(args[0], local_vars=local_vars)
         for x in args[1:]:
             s += self.evaluate(x, local_vars=local_vars)
@@ -418,7 +450,7 @@ class ClopureRunner(object):
 
     def clopure_mul(self, *args, local_vars):
         if len(args) == 0:
-            raise ClopureRuntimeError("* takes at least 1 argument")
+            return 1
         s = self.evaluate(args[0], local_vars=local_vars)
         for x in args[1:]:
             s *= self.evaluate(x, local_vars=local_vars)
@@ -436,6 +468,12 @@ class ClopureRunner(object):
         for x in args[1:]:
             s /= self.evaluate(x, local_vars=local_vars)
         return s
+
+
+    def clopure_mod(self, *args, local_vars):
+        if len(args) != 2:
+            raise ClopureRuntimeError("mod takes 2 arguments")
+        return self.evaluate(args[0], local_vars=local_vars) % self.evaluate(args[1], local_vars=local_vars)
 
 
     def clopure_eq(self, *args, local_vars):
