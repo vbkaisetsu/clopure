@@ -3,6 +3,7 @@
 import sys
 import readline
 import traceback
+import os
 
 from argparse import ArgumentParser
 
@@ -24,8 +25,10 @@ def main():
 
     if args.FILE:
         stream = open(args.FILE, "r")
+        sys.path.insert(0, os.path.dirname(os.path.abspath(args.FILE)))
     else:
         stream = sys.stdin
+        sys.path.insert(0, os.path.dirname(os.path.abspath(".")))
 
     linenum = 0
     while True:
