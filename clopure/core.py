@@ -66,6 +66,7 @@ class ClopureRunner(object):
             "def": self.clopure_def,
             "fn": self.clopure_fn,
             "defn": self.clopure_defn,
+            "chain-args": self.clopure_chain_args,
             "quote": self.clopure_quote,
             "eval": self.clopure_eval,
             "if": self.clopure_if,
@@ -77,6 +78,7 @@ class ClopureRunner(object):
             "reduced": self.clopure_reduced,
             "filter": self.clopure_filter,
             "remove": self.clopure_remove,
+            "take-while": self.clopure_take_while,
             "pmap": self.clopure_pmap,
             "pmap-unord": self.clopure_pmap_unord,
             "iter-split": self.clopure_iter_split,
@@ -87,6 +89,8 @@ class ClopureRunner(object):
             "/": self.clopure_div,
             "mod": self.clopure_mod,
             "=": self.clopure_eq,
+            "and": self.clopure_and,
+            "or": self.clopure_or,
             ".": self.clopure_member,
         }
 
@@ -225,6 +229,13 @@ class ClopureRunner(object):
         self.global_vars[args[0].symbol] = ClopureFunction(args[1], args[2])
 
 
+    def clopure_chain_args(self, *args, local_vars):
+        if len(args) == 0:
+            raise ClopureRuntimeError("chain-args takes 1 or more arguments")
+        seqs = [self.evaluate(arg, local_vars=local_vars) for arg in args[1:]]
+        return self.evaluate((args[0],) + tuple(itertools.chain(*seqs)), local_vars=local_vars)
+
+
     def clopure_quote(self, *args, local_vars):
         if len(args) != 1:
             raise ClopureRuntimeError("quote takes just 1 argument")
@@ -337,6 +348,13 @@ class ClopureRunner(object):
             raise ClopureRuntimeError("remove takes 2 arguments")
         seq = self.evaluate(args[1], local_vars=local_vars)
         return (x for x in seq if not self.evaluate((args[0], x), local_vars=local_vars))
+
+
+    def clopure_take_while(self, *args, local_vars):
+        if len(args) != 2:
+            raise ClopureRuntimeError("take-while takes 2 arguments")
+        return itertools.takewhile(lambda x: self.evaluate((args[0], x), local_vars=local_vars),
+                                                        self.evaluate(args[1], local_vars=local_vars))
 
 
     def clopure_pmap(self, *args, local_vars):
@@ -501,6 +519,26 @@ class ClopureRunner(object):
             raise ClopureRuntimeError("= takes 2 arguments")
         return self.evaluate(args[0], local_vars=local_vars) \
             == self.evaluate(args[1], local_vars=local_vars)
+
+
+    def clopure_and(self, *args, local_vars):
+        if len(args) == 0:
+            raise ClopureRuntimeError("or takes at least 1 argument")
+        for arg in args:
+            result = self.evaluate(arg, local_vars=local_vars)
+            if not result:
+                return result
+        return result
+
+
+    def clopure_or(self, *args, local_vars):
+        if len(args) == 0:
+            raise ClopureRuntimeError("or takes at least 1 argument")
+        for arg in args:
+            result = self.evaluate(arg, local_vars=local_vars)
+            if result:
+                return result
+        return result
 
 
     def clopure_member(self, *args, local_vars):
