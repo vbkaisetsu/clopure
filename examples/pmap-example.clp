@@ -1,5 +1,3 @@
-(defimport builtins list)
-(defimport builtins print)
 (defimport time sleep)
 
 (doseq
