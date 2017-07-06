@@ -42,6 +42,7 @@ def main():
                 print()
                 break
             except KeyboardInterrupt:
+                clparser.clear()
                 print("(KeyboardInterrupt)", file=sys.stdout)
                 continue
         else:
