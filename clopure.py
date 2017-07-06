@@ -49,11 +49,14 @@ def main():
         try:
             trees = clparser.parse_line(line)
         except ClopureSyntaxError as e:
-            print("At line %d:" % linenum, file=sys.stdout)
+            if args.FILE or not sys.stdin.isatty():
+                print("At line %d:" % linenum, file=sys.stdout)
             print("Syntax error: %s" % str(e), file=sys.stdout)
             print(line, file=sys.stdout)
             print(" " * e.pos + "^", file=sys.stdout)
             clparser.clear()
+            if args.FILE or not sys.stdin.isatty():
+                break
             continue
         try:
             for tree in trees:
@@ -76,6 +79,7 @@ def main():
             if args.FILE or not sys.stdin.isatty():
                 print("At line %d:" % linenum, file=sys.stdout)
             print("(KeyboardInterrupt)", file=sys.stdout)
+            traceback.print_exc(file=sys.stdout)
             if args.FILE or not sys.stdin.isatty():
                 break
     if not clparser.is_empty():
