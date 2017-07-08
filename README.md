@@ -33,7 +33,7 @@ When brackets of the input code is not closed, the console requires additional l
 ## Multi-processing
 
 Some functions support multi-processing. If you want to enable it, prease run clopure with `-t` option.
-For example, The following command launches clopure with 4 processes:
+For example, the following command launches clopure with 4 processes:
 ```
 $ clopure -t 4
 ```
@@ -45,7 +45,7 @@ Currently, clopure has 4 multi-processing functions: `pmap`, `pmap-unord` `iter-
 ('map like function' means that it takes an iterator and also returns an iterator.)
 
 When `iter-mp-split` is called, it starts a given function on the specified number of processes,
-and items of the given iterator are passed to each process.
+and items of the given iterator that are passed to the function created by `iter-mp-split` are distributed to each process.
 
 The following code is an example of `iter-mp-split`:
 ```clojure
