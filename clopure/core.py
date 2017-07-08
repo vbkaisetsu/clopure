@@ -298,10 +298,8 @@ class ClopureRunner(object):
         doseq_loop(args[1], keys, vals, [])
 
 
-    def clopure_dorun(self, *args, local_vars):
-        if len(args) != 1:
-            raise ClopureRuntimeError("dorun takes 1 argument")
-        for item in self.evaluate(args[0], local_vars=local_vars):
+    def clopure_dorun(self, seq, local_vars):
+        for item in self.evaluate(seq, local_vars=local_vars):
             self.evaluate(item, local_vars=local_vars)
 
 
@@ -334,31 +332,23 @@ class ClopureRunner(object):
         return result
 
 
-    def clopure_reduced(self, *args, local_vars):
-        if len(args) != 1:
-            raise ClopureRuntimeError("reduced takes 1 argument")
-        return ReducedObject(args[0])
+    def clopure_reduced(self, msg, local_vars):
+        return ReducedObject(msg)
 
 
-    def clopure_filter(self, *args, local_vars):
-        if len(args) != 2:
-            raise ClopureRuntimeError("filter takes 2 arguments")
-        seq = self.evaluate(args[1], local_vars=local_vars)
-        return (x for x in seq if self.evaluate((args[0], x), local_vars=local_vars))
+    def clopure_filter(self, fn, seq, local_vars):
+        seq = self.evaluate(seq, local_vars=local_vars)
+        return (x for x in seq if self.evaluate((fn, x), local_vars=local_vars))
 
 
-    def clopure_remove(self, *args, local_vars):
-        if len(args) != 2:
-            raise ClopureRuntimeError("remove takes 2 arguments")
-        seq = self.evaluate(args[1], local_vars=local_vars)
-        return (x for x in seq if not self.evaluate((args[0], x), local_vars=local_vars))
+    def clopure_remove(self, fn, seq, local_vars):
+        seq = self.evaluate(seq, local_vars=local_vars)
+        return (x for x in seq if not self.evaluate((fn, x), local_vars=local_vars))
 
 
-    def clopure_take_while(self, *args, local_vars):
-        if len(args) != 2:
-            raise ClopureRuntimeError("take-while takes 2 arguments")
-        return itertools.takewhile(lambda x: self.evaluate((args[0], x), local_vars=local_vars),
-                                                        self.evaluate(args[1], local_vars=local_vars))
+    def clopure_take_while(self, cond, seq, local_vars):
+        seq = self.evaluate(seq, local_vars=local_vars)
+        return itertools.takewhile(lambda x: self.evaluate((cond, x), local_vars=local_vars), seq)
 
 
     def clopure_pmap(self, *args, local_vars):
@@ -381,10 +371,7 @@ class ClopureRunner(object):
         return output_semaphore_hook(p.imap_unordered(self.mp_evaluate_wrapper, input_iter), s)
 
 
-    def clopure_iter_mp_split(self, *args, local_vars):
-        if len(args) != 1:
-            raise ClopureRuntimeError("iter-split takes 1 argument")
-        fn = args[0]
+    def clopure_iter_mp_split(self, fn, local_vars):
         def iter_split_generator(*g):
             q_in = Queue()
             q_out = Queue()
@@ -428,10 +415,7 @@ class ClopureRunner(object):
         return iter_split_generator
 
 
-    def clopure_iter_mp_split_unord(self, *args, local_vars):
-        if len(args) != 1:
-            raise ClopureRuntimeError("iter-split-unord takes 1 argument")
-        fn = args[0]
+    def clopure_iter_mp_split_unord(self, fn, local_vars):
         def iter_split_generator(*g):
             q_in = Queue()
             q_out = Queue()
@@ -472,7 +456,7 @@ class ClopureRunner(object):
 
     def clopure_and(self, *args, local_vars):
         if len(args) == 0:
-            raise ClopureRuntimeError("or takes at least 1 argument")
+            raise ClopureRuntimeError("and takes at least 1 argument")
         for arg in args:
             result = self.evaluate(arg, local_vars=local_vars)
             if not result:
