@@ -67,7 +67,7 @@ def main():
             for tree in trees:
                 result = runner.evaluate(tree)
                 if not args.FILE and sys.stdin.isatty() and result is not None:
-                    print(result)
+                    print(repr(result))
         except ClopureRuntimeError as e:
             if args.FILE or not sys.stdin.isatty():
                 print("At line %d:" % linenum, file=sys.stdout)
