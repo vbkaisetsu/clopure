@@ -106,7 +106,8 @@ class ClopureRunner(object):
             fn = self.evaluate(node[0], local_vars=local_vars)
             if isinstance(fn, ClopureFunction):
                 new_local_vars = local_vars.copy()
-                new_local_vars.update({k.symbol: v for k, v in zip(fn.arg_vec, node[1:])})
+                new_local_vars.update({k.symbol: self.evaluate(v, local_vars=local_vars)
+                                                    for k, v in zip(fn.arg_vec, node[1:])})
                 if fn.name:
                     new_local_vars[fn.name] = fn
                 return self.evaluate(fn.expression, local_vars=new_local_vars)
