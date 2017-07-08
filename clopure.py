@@ -35,6 +35,7 @@ def main():
         if not args.FILE and sys.stdin.isatty():
             try:
                 if clparser.is_empty():
+                    print()
                     line = input(">>> ").rstrip()
                 else:
                     line = input("... ").rstrip()
@@ -65,7 +66,7 @@ def main():
         try:
             for tree in trees:
                 result = runner.evaluate(tree)
-                if not args.FILE and sys.stdin.isatty():
+                if not args.FILE and sys.stdin.isatty() and result is not None:
                     print(result)
         except ClopureRuntimeError as e:
             if args.FILE or not sys.stdin.isatty():
