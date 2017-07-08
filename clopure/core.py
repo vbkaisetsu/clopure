@@ -158,6 +158,17 @@ class ClopureRunner(object):
 
 
     def clopure_import(self, *args, local_vars):
+        """Imports a python module anonymously.
+
+        This function takes 1 or 2 symbols. When an argument is passed, it is
+        translated to "import arg0" but the module will not be substituted to
+        arg0. When 2 arguments are passed, it is translated to
+        "from arg0 import arg1"
+
+        Example:
+            ((. (import time) sleep) 3) ; Sleep 3 seconds
+            ((import time sleep) 5) ; Sleep 5 seconds
+        """
         for arg in args:
             if not isinstance(arg, ClopureSymbol):
                 raise ClopureRuntimeError("%s is not a symbol" % arg)
@@ -170,6 +181,17 @@ class ClopureRunner(object):
 
 
     def clopure_defimport(self, *args, local_vars):
+        """Imports a python module.
+
+        This function takes 1 or 2 symbols. It works like "import" function,
+        but substitutes a module to a variable.
+
+        (defimport time sleep)
+
+        is equal to
+
+        (def sleep (import time sleep))
+        """
         for arg in args:
             if not isinstance(arg, ClopureSymbol):
                 raise ClopureRuntimeError("%s is not a symbol" % arg)
@@ -182,6 +204,17 @@ class ClopureRunner(object):
 
 
     def clopure_defimport_as(self, *args, local_vars):
+        """Imports a python module and gives a different name.
+
+        This function takes 2 or 3 symbols. The first argument is a name that is
+        used in the script, and 2nd and 3rd arguments are the real module name.
+
+        (defimport-as np numpy)
+
+        is equal to
+
+        (def np (import numpy))
+        """
         for arg in args:
             if not isinstance(arg, ClopureSymbol):
                 raise ClopureRuntimeError("%s is not a symbol" % arg)
@@ -193,15 +226,42 @@ class ClopureRunner(object):
             raise ClopureRuntimeError("defimport-as takes 2 or 3 arguments")
 
 
-    def clopure_def(self, *args, local_vars):
-        if len(args) != 2:
-            raise ClopureRuntimeError("def takes 2 arguments")
-        if not isinstance(args[0], ClopureSymbol):
-            raise ClopureRuntimeError("%s is not a symbol" % str(args[0]))
-        self.global_vars[args[0].symbol] = self.evaluate(args[1], local_vars=local_vars)
+    def clopure_def(self, name, expression, local_vars):
+        """Evaluates expression and substitutes it to the given global name.
+
+        This function takes 2 arguments. The first is a symbol, and the second
+        is an expression. The expression is evaluated, then it is substetuted to
+        a given symbol. This name is available in every scopes.
+
+        Example:
+            (def pi 3.14) ; PI
+            (def r 5) ; radius
+            (print (* pi r r)) ; area of the circle
+        """
+        if not isinstance(name, ClopureSymbol):
+            raise ClopureRuntimeError("%s is not a symbol" % str(name))
+        self.global_vars[name.symbol] = self.evaluate(expression, local_vars=local_vars)
 
 
     def clopure_fn(self, *args, local_vars):
+        """Creates an anonymous function.
+
+        This function takes 2 or 3 arguments. When 2 arguments are passed, the
+        first argument is a list, and the second argument is an expression.
+        The list contains symbols that specify names of arguments.
+        When 3 arguments are passed, the first argument is a name of this
+        function. This name is hidden from the outside of this function.
+
+        "(fn [...] expression)" is also able to be written as "#expression"
+        form. If the expression contains % parameters, arguments are extracted
+        to these positions.
+
+        Example:
+            ((fn [x y] (* x y)) 5 6) ; => 30
+            ((fn fact [n] (if (> n 0) (* n (fact (- n 1))) 1)) 5) ; => 5! = 120
+            (#(- %2 %1) 5 3) ; => -1
+            (#((. % encode) "utf-8") "test") ; => b'test'
+        """
         if len(args) == 2:
             if not isinstance(args[0], list):
                 raise ClopureRuntimeError("the first argument must be a vector")
@@ -221,17 +281,27 @@ class ClopureRunner(object):
         raise ClopureRuntimeError("fn takes 2 or 3 arguments")
 
 
-    def clopure_defn(self, *args, local_vars):
-        if len(args) != 3:
-            raise ClopureRuntimeError("fn takes 3 arguments")
-        if not isinstance(args[0], ClopureSymbol):
-            raise ClopureRuntimeError("%s is not a symbol" % str(args[0]))
-        if not isinstance(args[1], list):
+    def clopure_defn(self, name, varnames, expression, local_vars):
+        """Creates a function.
+
+        This function takes 3 arguments. The first argument is a symbol that
+        is used as a name of this function. The second argument is a list, and
+        the third one is an expression.
+
+        (defn f [x y] (...))
+
+        is equal to
+
+        (def f (fn [x y] (...)))
+        """
+        if not isinstance(name, ClopureSymbol):
+            raise ClopureRuntimeError("%s is not a symbol" % str(name))
+        if not isinstance(varnames, list):
             raise ClopureRuntimeError("the first argument must be a vector")
-        for arg in args[1]:
+        for arg in varnames:
             if not isinstance(arg, ClopureSymbol):
                 raise ClopureRuntimeError("%s is not a symbol" % str(arg))
-        self.global_vars[args[0].symbol] = ClopureFunction(args[1], args[2])
+        self.global_vars[name.symbol] = ClopureFunction(varnames, expression)
 
 
     def clopure_extract_args(self, *args, local_vars):
