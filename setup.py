@@ -6,7 +6,7 @@ from setuptools import setup
 setup(
     name = "clopure",
     version = "0.1",
-    description = "Multi-thread supported functional language for Python",
+    description = "Multi-processing supported functional language for Python",
     url = "https://github.com/vbkaisetsu/clopure",
     author = "Koichi Akabe",
     author_email = "vbkaisetsu@gmail.com",

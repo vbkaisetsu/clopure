@@ -16,12 +16,12 @@ def main():
 
     aparser = ArgumentParser()
     aparser.add_argument("FILE", nargs="?", default="", help="Script file")
-    aparser.add_argument("-t", "--threads", type=int, default=1, help="Number of threads")
+    aparser.add_argument("-p", "--procs", type=int, default=1, help="Number of processes")
     aparser.add_argument("-q", "--queues", type=int, default=100, help="Number of queues")
     args = aparser.parse_args()
 
     clparser = ClopureParser()
-    runner = ClopureRunner(threads=args.threads, queue_size=args.queues)
+    runner = ClopureRunner(procs=args.procs, queue_size=args.queues)
 
     if args.FILE:
         stream = open(args.FILE, "r")

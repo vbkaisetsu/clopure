@@ -52,10 +52,10 @@ class ReducedObject(object):
 
 
 class ClopureRunner(object):
-    def __init__(self, threads=1, queue_size=100):
+    def __init__(self, procs=1, queue_size=100):
         self.global_vars = {}
 
-        self.threads = threads
+        self.procs = procs
         self.queue_size = queue_size
 
         self.core_functions = {
@@ -449,7 +449,7 @@ class ClopureRunner(object):
         if len(args) <= 1:
             raise ClopureRuntimeError("pmap takes at least 2 arguments")
         seqs = [self.evaluate(arg, local_vars=local_vars) for arg in args[1:]]
-        p = Pool(self.threads)
+        p = Pool(self.procs)
         s = Semaphore(self.queue_size)
         input_iter = (((args[0],) + x, local_vars) for x in input_semaphore_hook(zip(*seqs), s))
         return output_semaphore_hook(p.imap(self.mp_evaluate_wrapper, input_iter), s)
@@ -459,7 +459,7 @@ class ClopureRunner(object):
         if len(args) <= 1:
             raise ClopureRuntimeError("pmap-unord takes at least 2 arguments")
         seqs = [self.evaluate(arg, local_vars=local_vars) for arg in args[1:]]
-        p = Pool(self.threads)
+        p = Pool(self.procs)
         s = Semaphore(self.queue_size)
         input_iter = (((args[0],) + x, local_vars) for x in input_semaphore_hook(zip(*seqs), s))
         return output_semaphore_hook(p.imap_unordered(self.mp_evaluate_wrapper, input_iter), s)
@@ -471,7 +471,7 @@ class ClopureRunner(object):
             q_out = Queue()
             exit_input_thread = False
             semaphore = Semaphore(self.queue_size)
-            ps = [Process(target=self.iter_split_evaluate_wrapper, args=(fn, local_vars, len(g), q_in, q_out)) for i in range(self.threads)]
+            ps = [Process(target=self.iter_split_evaluate_wrapper, args=(fn, local_vars, len(g), q_in, q_out)) for i in range(self.procs)]
             for p in ps:
                 p.start()
             def input_thread():
@@ -483,19 +483,19 @@ class ClopureRunner(object):
                         q_in.put((i, item))
                 except BaseException:
                     traceback.print_exc(file=sys.stdout)
-                for i in range(self.threads):
+                for i in range(self.procs):
                     q_in.put((0, EOFMessage))
 
             t = Thread(target=input_thread)
             t.start()
             cur = 0
-            n_working_threads = self.threads
+            n_working_procs = self.procs
             l = [None] * self.queue_size
             while True:
                 k, data = q_out.get()
                 if data is EOFMessage:
-                    n_working_threads -= 1
-                    if n_working_threads == 0:
+                    n_working_procs -= 1
+                    if n_working_procs == 0:
                         break
                     continue
                 l[k - cur] = (k, data)
@@ -515,7 +515,7 @@ class ClopureRunner(object):
             q_out = Queue()
             exit_input_thread = False
             semaphore = Semaphore(self.queue_size)
-            ps = [Process(target=self.iter_split_evaluate_wrapper, args=(fn, local_vars, len(g), q_in, q_out)) for i in range(self.threads)]
+            ps = [Process(target=self.iter_split_evaluate_wrapper, args=(fn, local_vars, len(g), q_in, q_out)) for i in range(self.procs)]
             for p in ps:
                 p.start()
             def input_thread():
@@ -527,16 +527,16 @@ class ClopureRunner(object):
                         q_in.put((i, item))
                 except BaseException:
                     traceback.print_exc(file=sys.stdout)
-                for i in range(self.threads):
+                for i in range(self.procs):
                     q_in.put((0, EOFMessage))
             t = Thread(target=input_thread)
             t.start()
-            n_working_threads = self.threads
+            n_working_procs = self.procs
             while True:
                 k, data = q_out.get()
                 if data is EOFMessage:
-                    n_working_threads -= 1
-                    if n_working_threads == 0:
+                    n_working_procs -= 1
+                    if n_working_procs == 0:
                         break
                     continue
                 yield data
