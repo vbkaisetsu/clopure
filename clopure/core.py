@@ -3,7 +3,6 @@ import itertools
 import traceback
 import sys
 
-from fractions import Fraction
 from multiprocessing import Pool, Semaphore, Process, Pipe, Queue, Lock
 from threading import Thread
 
