@@ -43,7 +43,7 @@ $ echo "(print (+ 1 1))" | clopure
 
 ## Multi-processing
 
-Some functions support multi-processing. If you want to enable it, prease run clopure with `-t` option.
+Some functions support multi-processing. If you want to enable it, prease run clopure with `-p` option.
 For example, the following command launches clopure with 4 processes:
 ```
 $ clopure -t 4
