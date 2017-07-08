@@ -65,7 +65,7 @@ class ClopureRunner(object):
             "def": self.clopure_def,
             "fn": self.clopure_fn,
             "defn": self.clopure_defn,
-            "chain-args": self.clopure_chain_args,
+            "extract-args": self.clopure_extract_args,
             "quote": self.clopure_quote,
             "eval": self.clopure_eval,
             "if": self.clopure_if,
@@ -233,7 +233,7 @@ class ClopureRunner(object):
         self.global_vars[args[0].symbol] = ClopureFunction(args[1], args[2])
 
 
-    def clopure_chain_args(self, *args, local_vars):
+    def clopure_extract_args(self, *args, local_vars):
         if len(args) == 0:
             raise ClopureRuntimeError("chain-args takes 1 or more arguments")
         seqs = [self.evaluate(arg, local_vars=local_vars) for arg in args[1:]]
