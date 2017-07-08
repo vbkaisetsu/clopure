@@ -165,7 +165,7 @@ class ClopureRunner(object):
         arg0. When 2 arguments are passed, it is translated to
         "from arg0 import arg1"
 
-        Example:
+        Examples:
             ((. (import time) sleep) 3) ; Sleep 3 seconds
             ((import time sleep) 5) ; Sleep 5 seconds
         """
@@ -186,11 +186,13 @@ class ClopureRunner(object):
         This function takes 1 or 2 symbols. It works like "import" function,
         but substitutes a module to a variable.
 
-        (defimport time sleep)
+        Same as:
+            (def module (import module))
+            (def module (import package module))
 
-        is equal to
-
-        (def sleep (import time sleep))
+        Examples:
+            (defimport time sleep) ; means "from time import sleep"
+            (sleep 5) ; Sleep 5 seconds
         """
         for arg in args:
             if not isinstance(arg, ClopureSymbol):
@@ -209,11 +211,13 @@ class ClopureRunner(object):
         This function takes 2 or 3 symbols. The first argument is a name that is
         used in the script, and 2nd and 3rd arguments are the real module name.
 
-        (defimport-as np numpy)
+        Same as:
+            (def name (import module))
+            (def name (import package module))
 
-        is equal to
-
-        (def np (import numpy))
+        Examples:
+            (defimport-as np numpy); import numpy as np
+            ((. np zeros) 5); array([ 0.,  0.,  0.,  0.,  0.])
         """
         for arg in args:
             if not isinstance(arg, ClopureSymbol):
@@ -233,7 +237,7 @@ class ClopureRunner(object):
         is an expression. The expression is evaluated, then it is substetuted to
         a given symbol. This name is available in every scopes.
 
-        Example:
+        Examples:
             (def pi 3.14) ; PI
             (def r 5) ; radius
             (print (* pi r r)) ; area of the circle
@@ -252,11 +256,11 @@ class ClopureRunner(object):
         When 3 arguments are passed, the first argument is a name of this
         function. This name is hidden from the outside of this function.
 
-        "(fn [...] expression)" is also able to be written as "#expression"
-        form. If the expression contains % parameters, arguments are extracted
-        to these positions.
+        A function is also able to be created by "#expression" form. If the
+        expression contains % parameters, arguments are extracted to these
+        positions.
 
-        Example:
+        Examples:
             ((fn [x y] (* x y)) 5 6) ; => 30
             ((fn fact [n] (if (> n 0) (* n (fact (- n 1))) 1)) 5) ; => 5! = 120
             (#(- %2 %1) 5 3) ; => -1
@@ -288,11 +292,8 @@ class ClopureRunner(object):
         is used as a name of this function. The second argument is a list, and
         the third one is an expression.
 
-        (defn f [x y] (...))
-
-        is equal to
-
-        (def f (fn [x y] (...)))
+        Same as:
+            (def name (fn varnames expression)
         """
         if not isinstance(name, ClopureSymbol):
             raise ClopureRuntimeError("%s is not a symbol" % str(name))
@@ -305,22 +306,44 @@ class ClopureRunner(object):
 
 
     def clopure_extract_args(self, *args, local_vars):
+        """Converts iterables to arguments.
+
+        This function takes 1 or more arguments. The first one is a function
+        that takes some arguments. Other arguments are iterables. Items of
+        all iterables are concatinated and passed to the function.
+
+        Examples:
+            (extract-args + [1 2 3] [4 5 6]) ; => 21
+        """
         if len(args) == 0:
             raise ClopureRuntimeError("chain-args takes 1 or more arguments")
         seqs = [self.evaluate(arg, local_vars=local_vars) for arg in args[1:]]
         return self.evaluate((args[0],) + tuple(itertools.chain(*seqs)), local_vars=local_vars)
 
 
-    def clopure_quote(self, *args, local_vars):
-        if len(args) != 1:
-            raise ClopureRuntimeError("quote takes just 1 argument")
-        return args[0]
+    def clopure_quote(self, expression, local_vars):
+        """Quotes expression.
+
+        An expression that is quoted is not evaluated immediately. It is mostly
+        used for tuples.
+
+        You can also use a single quotation (') to quote an expression.
+
+        Examples:
+            (1 2 3 4 5) ; => RuntimeError
+            (quote (1 2 3 4 5)) ; => (1, 2, 3, 4, 5)
+            '(#(/ (* (+ %1 %2) %3) 2) 1 2 3) ; => '(#(/ (* (+ %1 %2) %3) 2) 1 2 3)
+        """
+        return expression
 
 
-    def clopure_eval(self, *args, local_vars):
-        if len(args) != 1:
-            raise ClopureRuntimeError("eval takes just 1 argument")
-        return self.evaluate(self.evaluate(args[0], local_vars=local_vars),
+    def clopure_eval(self, expression, local_vars):
+        """Evaluate a quoted expression.
+
+        Examples:
+            (eval '(#(/ (* (+ %1 %2) %3) 2) 1 2 3)) ; => Fraction(9, 2)
+        """
+        return self.evaluate(self.evaluate(expression, local_vars=local_vars),
                         local_vars=local_vars)
 
 
