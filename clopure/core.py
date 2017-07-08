@@ -115,7 +115,17 @@ class ClopureRunner(object):
             if callable(fn):
                 eval_args = [self.evaluate(arg, local_vars=local_vars) for arg in node[1:]]
                 return fn(*eval_args)
-            raise ClopureRuntimeError("%s is not a function" % str(fn))
+            if isinstance(fn, tuple) or isinstance(fn, list):
+                if len(node) == 2:
+                    return fn[self.evaluate(node[1], local_vars=local_vars)]
+                elif len(node) == 3:
+                    return fn[self.evaluate(node[1], local_vars=local_vars):self.evaluate(node[2], local_vars=local_vars)]
+                raise ClopureRuntimeError("tuple and list takes 1 or 2 arguments")
+            if isinstance(fn, dict):
+                if len(node) == 2:
+                    return fn[self.evaluate(node[1], local_vars=local_vars)]
+                raise ClopureRuntimeError("dict takes 1 argument")
+            raise ClopureRuntimeError("%s is not a function, tuple, list, or dict" % str(fn))
         if isinstance(node, list):
             return [self.evaluate(item, local_vars=local_vars) for item in node]
         return node
