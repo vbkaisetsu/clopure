@@ -30,6 +30,17 @@ When brackets of the input code is not closed, the console requires additional l
 [2, 3, 4, 5, 6]
 ```
 
+## Run a clopure script file
+
+You can also specify a script file:
+```
+$ clopure script.clp
+```
+or
+```
+$ echo "(print (+ 1 1))" | clopure
+```
+
 ## Multi-processing
 
 Some functions support multi-processing. If you want to enable it, prease run clopure with `-t` option.
