@@ -37,6 +37,7 @@ functions = {
     "float": float,
     "str": str,
     "print": print,
+    "input": input,
     "read-line": sys.stdin.readline,
     "range": range,
     "reversed": reversed,
