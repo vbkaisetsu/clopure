@@ -42,6 +42,7 @@ functions = {
     "reversed": reversed,
     "zip": lambda *x: (list(a) for a in zip(*x)),
     "unzip": clopure_unzip,
+    "enumerate": lambda x: (list(a) for a in enumerate(x)),
     "list": list,
     "tuple": tuple,
     "arg-list": lambda *x: list(x),
