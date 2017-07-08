@@ -1,5 +1,5 @@
 # clopure
-Multi-thread supported functional language for Python
+Multi-processing supported functional language for Python
 
 ## Install
 
@@ -33,19 +33,19 @@ When brackets of the input code is not closed, the console requires additional l
 ## Multi-processing
 
 Some functions support multi-processing. If you want to enable it, prease run clopure with `-t` option.
-For example, The following command launches clopure with 4 threads:
+For example, The following command launches clopure with 4 processes:
 ```
 $ clopure -t 4
 ```
 
 Currently, clopure has 4 multi-processing functions: `pmap`, `pmap-unord` `iter-mp-split` and `iter-mp-split-unord`.
-`pmap` is the multi-threading version of `map` function.
+`pmap` is the multi-processing version of `map` function.
 
 `iter-mp-split` takes a map like function and returns a new map like function
 ('map like function' means that it takes an iterator and also returns an iterator.)
 
-When `iter-mp-split` is called, it starts a given function on the specified number of threads,
-and items of the given iterator are passed to each thread.
+When `iter-mp-split` is called, it starts a given function on the specified number of processes,
+and items of the given iterator are passed to each process.
 
 The following code is an example of `iter-mp-split`:
 ```clojure
@@ -80,4 +80,4 @@ pid: 51694 7
 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 ```
 
-When you use `iter-mp-split`, the initialization process of the given function is run only for each thread.
+When you use `iter-mp-split`, the initialization process of the given function is run only for each process.
