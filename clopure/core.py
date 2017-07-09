@@ -348,6 +348,21 @@ class ClopureRunner(object):
 
 
     def clopure_if(self, *args, local_vars):
+        """Conditional function.
+
+        This function takes 2 or 3 expressions. The first one is a condition.
+        If it indicates True, the second argument will be evaluated. When the
+        third argument is given, it will be evaluated if the condition indicates
+        False.
+
+        Examples:
+            (defn f [x] (if (= (mod x 2) 0) x))
+            (defn g [x] (if (= (mod x 2) 0) x (- x)))
+            (f 42) ; => 42
+            (f 15) ; => None
+            (g 42) ; => 42
+            (g 15) ; => 15
+        """
         if len(args) in (2, 3):
             r = self.evaluate(args[0], local_vars=local_vars)
             if r:
@@ -359,19 +374,43 @@ class ClopureRunner(object):
 
 
     def clopure_do(self, *args, local_vars):
+        """Evaluates all arguments.
+
+        This function takes a variable number of arguments. The given
+        expressions are evaluated in the given order.
+        Finally, it returns a result of the last expression.
+
+        Examples:
+            (do) ; => None
+            (do 1 2 3 4) ; => 4
+            (do (print "a") (print "b") (print "c") "d") ; => "d"
+                                            ; (with printing "a", "b", and "c")
+        """
         ret = None
         for arg in args:
             ret = self.evaluate(arg, local_vars=local_vars)
         return ret
 
 
-    def clopure_doseq(self, *args, local_vars):
-        if len(args) != 2:
-            raise ClopureRuntimeError("doesq takes 2 arguments")
-        if not isinstance(args[0], list):
-            raise ClopureRuntimeError("the second argument must be a vector")
-        if len(args[0]) % 2 != 0:
-            raise ClopureRuntimeError("the second argument must contain even number of forms")
+    def clopure_doseq(self, seqs, fn, local_vars):
+        """Runs a function with all variable combinations.
+
+        This function takes 2 arguments. The first one is a vactor that contains
+        symbols in odd positions and iterables in even positions. The third one
+        is an expression.
+
+        Examples:
+            (doseq [x [1 2] y [3 4]] (print x y))
+            ; prints:
+            ;   1 3
+            ;   1 4
+            ;   2 3
+            ;   2 4
+        """
+        if not isinstance(seqs, list):
+            raise ClopureRuntimeError("the first argument must be a vector")
+        if len(seqs) % 2 != 0:
+            raise ClopureRuntimeError("the first argument must contain even number of forms")
         keys = []
         vals = []
         for i in range(0, len(args[0]), 2):
@@ -393,6 +432,18 @@ class ClopureRunner(object):
 
 
     def clopure_dorun(self, seq, local_vars):
+        """Evaluates items of an iterable.
+
+        This function takes just one iterable that generates expressions
+
+        Examples:
+            (dorun (map #(print %) [0 1 2 3]))
+            ;  prints:
+            ;    0
+            ;    1
+            ;    2
+            ;    3
+        """
         for item in self.evaluate(seq, local_vars=local_vars):
             self.evaluate(item, local_vars=local_vars)
 

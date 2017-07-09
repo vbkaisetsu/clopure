@@ -90,5 +90,3 @@ pid: 51696 6
 pid: 51694 7
 [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 ```
-
-When you use `iter-mp-split`, the initialization process of the given function is run only for each process.
