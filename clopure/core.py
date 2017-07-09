@@ -413,22 +413,16 @@ class ClopureRunner(object):
             raise ClopureRuntimeError("the first argument must contain even number of forms")
         keys = []
         vals = []
-        for i in range(0, len(args[0]), 2):
-            if not isinstance(args[0][i], ClopureSymbol):
-                raise ClopureRuntimeError("%s is not a symbol" % str(args[0][i]))
-            keys.append(args[0][i])
-            vals.append(args[0][i + 1])
-        def doseq_loop(func, keys, vals, chosen):
-            if not vals:
-                new_local_vars = local_vars.copy()
-                new_local_vars.update({k.symbol: self.evaluate(v, local_vars=local_vars)
-                                                    for k, v in zip(keys, chosen)})
-                self.evaluate(func, local_vars=new_local_vars)
-                return
-            seq = self.evaluate(vals[0], local_vars=local_vars)
-            for v in seq:
-                doseq_loop(func, keys, vals[1:], chosen + [v])
-        doseq_loop(args[1], keys, vals, [])
+        for i in range(0, len(seqs), 2):
+            if not isinstance(seqs[i], ClopureSymbol):
+                raise ClopureRuntimeError("%s is not a symbol" % str(seqs[i]))
+            keys.append(seqs[i])
+            vals.append(seqs[i + 1])
+        new_local_vars = local_vars.copy()
+        for chosen in itertools.product(*vals):
+            new_local_vars.update({k.symbol: self.evaluate(v, local_vars=local_vars)
+                                                for k, v in zip(keys, chosen)})
+            self.evaluate(fn, local_vars=new_local_vars)
 
 
     def clopure_dorun(self, seq, local_vars):
