@@ -1,11 +1,12 @@
 # clopure
-Multi-processing supported functional language for Python
+Multi-processing supported functional language implemented in Python
 
 ## Install
 
 ```
 $ git clone https://github.com/vbkaisetsu/clopure.git
 $ cd clopure
+$ ./setup.py test
 $ ./setup.py build
 $ sudo ./setup.py install
 ```
@@ -46,7 +47,7 @@ $ echo "(print (+ 1 1))" | clopure
 Some functions support multi-processing. If you want to enable it, prease run clopure with `-p` option.
 For example, the following command launches clopure with 4 processes:
 ```
-$ clopure -t 4
+$ clopure -p 4
 ```
 
 Currently, clopure has 4 multi-processing functions: `pmap`, `pmap-unord` `iter-mp-split` and `iter-mp-split-unord`.

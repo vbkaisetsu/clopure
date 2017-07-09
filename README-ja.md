@@ -1,11 +1,12 @@
 # clopure
-Pythonによるマルチプロセッシング対応関数型言語
+Pythonで実装されたマルチプロセッシング対応関数型言語
 
 ## インストール
 
 ```
 $ git clone https://github.com/vbkaisetsu/clopure.git
 $ cd clopure
+$ ./setup.py test
 $ ./setup.py build
 $ sudo ./setup.py install
 ```
