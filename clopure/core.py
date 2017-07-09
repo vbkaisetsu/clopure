@@ -442,14 +442,39 @@ class ClopureRunner(object):
             self.evaluate(item, local_vars=local_vars)
 
 
-    def clopure_map(self, *args, local_vars):
-        if len(args) <= 1:
+    def clopure_map(self, fn, *args, local_vars):
+        """Apply a function to all items in iterables.
+
+        This function takes 1 or more arguments. The first one is a function,
+        and others are iterables. Items in iterables are substituted to the
+        function, then results are returned as a generator.
+
+        Examples:
+            (map #(+ %1 %2) [0 1 2 3] [4 5 6 7]) ; => generator
+            (list (map #(+ %1 %2) [0 1 2 3] [4 5 6 7])) ; => [4, 6, 8, 10]
+        """
+        if len(args) == 0:
             raise ClopureRuntimeError("map takes at least 2 arguments")
-        seqs = [self.evaluate(arg, local_vars=local_vars) for arg in args[1:]]
-        return (self.evaluate((args[0],) + x, local_vars=local_vars) for x in zip(*seqs))
+        seqs = [self.evaluate(arg, local_vars=local_vars) for arg in args]
+        return (self.evaluate((fn,) + x, local_vars=local_vars) for x in zip(*seqs))
 
 
     def clopure_reduce(self, *args, local_vars):
+        """Convolutes an iterable.
+
+        This function takes 2 or 3 arguments. The first argument is a function
+        that takes 2 arguments. When 2 arguments are passed, the second argment
+        is iterable, and the first 2 items are substituted to the function.
+        Next, the result of the function and the third item is substituted to
+        the function, etc.
+
+        If 3 arguments are passed, the second one is an initial value.
+
+        Examples:
+            (reduce + (range 10)) ; => 45
+            (reduce #(.+ (list (reversed %1)) (arg-list %2)) [] (range 10))
+                        ; => [8, 6, 4, 2, 0, 1, 3, 5, 7, 9]
+        """
         reduce_args = []
         if len(args) == 3:
             reduce_args.append(args[1])
@@ -472,6 +497,17 @@ class ClopureRunner(object):
 
 
     def clopure_reduced(self, msg, local_vars):
+        """Stops reduce function.
+
+        This function takes just one argument that will become a result of the
+        reduce function when it stopped.
+
+        Examples:
+            (defn f [x y] (if (>= (+ x y) 40) (reduced "max") (+ x y)))
+            (reduce f (range 9)) ; => 36
+            (reduce f (range 10)) ; => 'max'
+            (reduce f (range 11)) ; => 'max'
+        """
         return ReducedObject(msg)
 
 
