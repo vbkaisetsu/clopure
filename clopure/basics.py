@@ -6,6 +6,15 @@ from functools import reduce
 from fractions import Fraction
 
 
+def clopure_object_add(*args):
+    if len(args) == 0:
+        return 0
+    s = args[0]
+    for x in args[1:]:
+        s += x
+    return s
+
+
 def clopure_div(s, *args):
     s = Fraction(s) if isinstance(s, int) else s
     if len(args) == 0:
@@ -21,6 +30,7 @@ def clopure_unzip(g, n):
 
 
 functions = {
+    ".+": clopure_object_add,
     "+": lambda *x: sum(x),
     "-": lambda s, *x: reduce(operator.sub, x, s) if len(x) != 0 else -s,
     "*": lambda *x: reduce(operator.mul, x, 1),
