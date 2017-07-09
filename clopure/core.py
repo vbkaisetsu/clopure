@@ -459,7 +459,7 @@ class ClopureRunner(object):
         return (self.evaluate((fn,) + x, local_vars=local_vars) for x in zip(*seqs))
 
 
-    def clopure_reduce(self, *args, local_vars):
+    def clopure_reduce(self, fn, *args, local_vars):
         """Convolutes an iterable.
 
         This function takes 2 or 3 arguments. The first argument is a function
@@ -475,25 +475,29 @@ class ClopureRunner(object):
             (reduce #(.+ (list (reversed %1)) (arg-list %2)) [] (range 10))
                         ; => [8, 6, 4, 2, 0, 1, 3, 5, 7, 9]
         """
-        reduce_args = []
-        if len(args) == 3:
-            reduce_args.append(args[1])
-            g = self.evaluate(args[2], local_vars=local_vars)
-        elif len(args) == 2:
-            g = self.evaluate(args[1], local_vars=local_vars)
+        if len(args) == 2:
+            first = args[0]
+            g = iter(self.evaluate(args[1], local_vars=local_vars))
+        elif len(args) == 1:
+            g = iter(self.evaluate(args[0], local_vars=local_vars))
+            try:
+                first = next(g)
+            except StopIteration:
+                first = self.evaluate((fn,), local_vars=local_vars)
+                return self.evaluate(first.value, local_vars=local_vars) if isinstance(first, ReducedObject) else first
         else:
             raise ClopureRuntimeError("reduce takes 2 or 3 arguments")
+        try:
+            first = self.evaluate((fn, first, next(g)), local_vars=local_vars)
+            if isinstance(first, ReducedObject):
+                return self.evaluate(first.value, local_vars=local_vars)
+        except StopIteration:
+            return first
         for item in g:
-            if len(reduce_args) == 2:
-                result = self.evaluate((args[0],) + tuple(reduce_args), local_vars=local_vars)
-                if isinstance(result, ReducedObject):
-                    return result.value
-                reduce_args = [result]
-            reduce_args.append(item)
-        result = self.evaluate((args[0],) + tuple(reduce_args), local_vars=local_vars)
-        if isinstance(result, ReducedObject):
-            return result.value
-        return result
+            first = self.evaluate((fn, first, item), local_vars=local_vars)
+            if isinstance(first, ReducedObject):
+                return self.evaluate(first.value, local_vars=local_vars)
+        return first
 
 
     def clopure_reduced(self, msg, local_vars):
