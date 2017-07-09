@@ -305,7 +305,7 @@ class ClopureRunner(object):
         self.global_vars[name.symbol] = ClopureFunction(varnames, expression)
 
 
-    def clopure_extract_args(self, *args, local_vars):
+    def clopure_extract_args(self, fn, *args, local_vars):
         """Converts iterables to arguments.
 
         This function takes 1 or more arguments. The first one is a function
@@ -315,10 +315,8 @@ class ClopureRunner(object):
         Examples:
             (extract-args + [1 2 3] [4 5 6]) ; => 21
         """
-        if len(args) == 0:
-            raise ClopureRuntimeError("chain-args takes 1 or more arguments")
-        seqs = [self.evaluate(arg, local_vars=local_vars) for arg in args[1:]]
-        return self.evaluate((args[0],) + tuple(itertools.chain(*seqs)), local_vars=local_vars)
+        seqs = [self.evaluate(arg, local_vars=local_vars) for arg in args]
+        return self.evaluate((fn,) + tuple(itertools.chain(*seqs)), local_vars=local_vars)
 
 
     def clopure_quote(self, expression, local_vars):
@@ -344,7 +342,7 @@ class ClopureRunner(object):
             (eval '(#(/ (* (+ %1 %2) %3) 2) 1 2 3)) ; => Fraction(9, 2)
         """
         return self.evaluate(self.evaluate(expression, local_vars=local_vars),
-                        local_vars=local_vars)
+                                local_vars=local_vars)
 
 
     def clopure_if(self, *args, local_vars):
