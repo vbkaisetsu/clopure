@@ -514,16 +514,43 @@ class ClopureRunner(object):
 
 
     def clopure_filter(self, fn, seq, local_vars):
+        """Filters an iterable by a conditional expression.
+
+        This function takes 2 arguments. The first one is an expression, and the
+        second one is an iterable. If the conditional expression indicates True,
+        items are included in the output.
+
+        Examples:
+            (list (filter #(>= % 5) [6 4 8 2 4 7])) ; => [6, 8, 7]
+        """
         seq = self.evaluate(seq, local_vars=local_vars)
         return (x for x in seq if self.evaluate((fn, x), local_vars=local_vars))
 
 
     def clopure_remove(self, fn, seq, local_vars):
+        """Removes an iterable by a conditional expression.
+
+        This function takes 2 arguments. The first one is an expression, and the
+        second one is an iterable. If the conditional expression indicates True,
+        items are removed from the output.
+
+        Examples:
+            (list (remove #(>= % 5) [6 4 8 2 4 7])) ; => [4, 2, 4]
+        """
         seq = self.evaluate(seq, local_vars=local_vars)
         return (x for x in seq if not self.evaluate((fn, x), local_vars=local_vars))
 
 
     def clopure_take_while(self, cond, seq, local_vars):
+        """Takes items using a conditional expression.
+
+        This function takes 2 arguments. The first one is an expression, and the
+        second one is an iterable. This function returns an iterable that
+        outputs items while the conditional expression indicates True.
+
+        Examples:
+            (list (take-while #(>= % 5) [7 6 5 4 3 2])) ; => [7, 6, 5]
+        """
         seq = self.evaluate(seq, local_vars=local_vars)
         return itertools.takewhile(lambda x: self.evaluate((cond, x), local_vars=local_vars), seq)
 
@@ -632,6 +659,16 @@ class ClopureRunner(object):
 
 
     def clopure_and(self, *args, local_vars):
+        """Pythonic AND
+
+        This function takes at least 1 expression. This function works like
+        Pythonic "and".
+
+        Examples:
+            (and 1 0 1) ; => 0
+            (and True False None) ; => False
+            (and 1 2 3) ; => 3
+        """
         if len(args) == 0:
             raise ClopureRuntimeError("and takes at least 1 argument")
         for arg in args:
@@ -642,6 +679,16 @@ class ClopureRunner(object):
 
 
     def clopure_or(self, *args, local_vars):
+        """Pythonic OR
+
+        This function takes at least 1 expression. This function works like
+        Pythonic "or".
+
+        Examples:
+            (or 0 1 0) ; => 1
+            (or False True False) ; => True
+            (or False None []) ; => []
+        """
         if len(args) == 0:
             raise ClopureRuntimeError("or takes at least 1 argument")
         for arg in args:
@@ -652,6 +699,15 @@ class ClopureRunner(object):
 
 
     def clopure_member(self, *args, local_vars):
+        """Gets a member of an instance.
+
+        This function takes at least 1 expression. It returns a member of the
+        instance.
+
+        Examples:
+            ((. "string" index) "r") ; => 2
+            (. 2j imag) ; => 2.0
+        """
         if len(args) == 0:
             raise ClopureRuntimeError(". takes at least 1 argument")
         obj = self.evaluate(args[0], local_vars=local_vars)

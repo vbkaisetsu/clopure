@@ -230,5 +230,81 @@ class TestUnit(unittest.TestCase):
         result = self.runner.evaluate(tree[0])
         self.assertEqual(result, 5)
 
+    def test_filter(self):
+        code = "(list (filter #(>= % 5) [6 4 8 2 4 7]))"
+        tree = self.parser.parse_line(code)
+        result = self.runner.evaluate(tree[0])
+        self.assertEqual(result, [6, 8, 7])
+        code = "(filter #(>= % 5) [6 4 8 2 4 7])"
+        tree = self.parser.parse_line(code)
+        result = self.runner.evaluate(tree[0])
+        self.assertTrue(isinstance(result, types.GeneratorType))
+
+    def test_remove(self):
+        code = "(list (remove #(>= % 5) [6 4 8 2 4 7]))"
+        tree = self.parser.parse_line(code)
+        result = self.runner.evaluate(tree[0])
+        self.assertEqual(result, [4, 2, 4])
+        code = "(remove #(>= % 5) [6 4 8 2 4 7])"
+        tree = self.parser.parse_line(code)
+        result = self.runner.evaluate(tree[0])
+        self.assertTrue(isinstance(result, types.GeneratorType))
+
+    def test_take_while(self):
+        code = "(list (take-while #(>= % 5) [7 6 5 4 3 2]))"
+        tree = self.parser.parse_line(code)
+        result = self.runner.evaluate(tree[0])
+        self.assertEqual(result, [7, 6, 5])
+        code = "(take-while #(>= % 5) [7 6 5 4 3 2])"
+        tree = self.parser.parse_line(code)
+        result = self.runner.evaluate(tree[0])
+        self.assertTrue(hasattr(result, "__next__"))
+
+    def test_and(self):
+        code = "(and (do (print \"a\") 1) (do (print \"b\") 0) (do (print \"c\") 1))"
+        tree = self.parser.parse_line(code)
+        io = StringIO()
+        sys.stdout = io
+        result = self.runner.evaluate(tree[0])
+        sys.stdout = sys.__stdout__
+        self.assertEqual(result, 0)
+        self.assertEqual(io.getvalue(), "a\nb\n")
+        code = "(and True False True)"
+        tree = self.parser.parse_line(code)
+        result = self.runner.evaluate(tree[0])
+        self.assertEqual(result, False)
+        code = "(and True 1 4)"
+        tree = self.parser.parse_line(code)
+        result = self.runner.evaluate(tree[0])
+        self.assertEqual(result, 4)
+
+    def test_or(self):
+        code = "(or (do (print \"a\") 0) (do (print \"b\") 1) (do (print \"c\") 0))"
+        tree = self.parser.parse_line(code)
+        io = StringIO()
+        sys.stdout = io
+        result = self.runner.evaluate(tree[0])
+        sys.stdout = sys.__stdout__
+        self.assertEqual(result, 1)
+        self.assertEqual(io.getvalue(), "a\nb\n")
+        code = "(or False True False)"
+        tree = self.parser.parse_line(code)
+        result = self.runner.evaluate(tree[0])
+        self.assertEqual(result, True)
+        code = "(or False None [])"
+        tree = self.parser.parse_line(code)
+        result = self.runner.evaluate(tree[0])
+        self.assertEqual(result, [])
+
+    def test_member(self):
+        code = "((. \"abc\" encode) \"utf-8\")"
+        tree = self.parser.parse_line(code)
+        result = self.runner.evaluate(tree[0])
+        self.assertEqual(result, b"abc")
+        code = "(. 2j imag)"
+        tree = self.parser.parse_line(code)
+        result = self.runner.evaluate(tree[0])
+        self.assertEqual(result, 2.0)
+
     def tearDown(self):
         sys.stdout = sys.__stdout__
