@@ -59,6 +59,23 @@ class TestUnit(unittest.TestCase):
         result = self.runner.evaluate(tree[1])
         self.assertEqual(result, 2)
 
+
+    def test_let(self):
+        code = "(def x 5) (+ (let [x (+ 1 2) y (+ 3 4)] (print (+ x y)) (print (- x y)) (* x y)) x)"
+        tree = self.parser.parse_line(code)
+        io = StringIO()
+        sys.stdout = io
+        result = self.runner.evaluate(tree[0])
+        result = self.runner.evaluate(tree[1])
+        sys.stdout = sys.__stdout__
+        self.assertEqual(io.getvalue(), "10\n-4\n")
+        self.assertEqual(result, 26)
+        code = "(+ (let [x (+ 1 2) y (+ 3 4)] (+ x y) (- x y) (* x y)) y)"
+        tree = self.parser.parse_line(code)
+        with self.assertRaises(Exception) as cm:
+            result = self.runner.evaluate(tree[0])
+
+
     def test_fn(self):
         code = "((fn [x y] (+ x y)) 1 2)"
         tree = self.parser.parse_line(code)

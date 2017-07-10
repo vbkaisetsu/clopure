@@ -63,6 +63,7 @@ class ClopureRunner(object):
             "defimport": self.clopure_defimport,
             "defimport-as": self.clopure_defimport_as,
             "def": self.clopure_def,
+            "let": self.clopure_let,
             "fn": self.clopure_fn,
             "defn": self.clopure_defn,
             "extract-args": self.clopure_extract_args,
@@ -91,10 +92,10 @@ class ClopureRunner(object):
     def evaluate(self, node, local_vars={}):
         if isinstance(node, ClopureSymbol):
             symbol = node.symbol
-            if symbol in self.global_vars:
-                return self.evaluate(self.global_vars[symbol], local_vars=local_vars)
             if symbol in local_vars:
                 return self.evaluate(local_vars[symbol], local_vars=local_vars)
+            if symbol in self.global_vars:
+                return self.evaluate(self.global_vars[symbol], local_vars=local_vars)
             if symbol in self.core_functions:
                 return self.core_functions[symbol]
             if symbol in basics.functions:
@@ -184,7 +185,7 @@ class ClopureRunner(object):
         """Imports a python module.
 
         This function takes 1 or 2 symbols. It works like "import" function,
-        but substitutes a module to a variable.
+        but the module will be binded to a symbol.
 
         Same as:
             (def module (import module))
@@ -231,10 +232,10 @@ class ClopureRunner(object):
 
 
     def clopure_def(self, name, expression, local_vars):
-        """Evaluates expression and substitutes it to the given global name.
+        """Evaluates expression and binds it to a global name.
 
         This function takes 2 arguments. The first is a symbol, and the second
-        is an expression. The expression is evaluated, then it is substetuted to
+        is an expression. The expression is evaluated, then it is binded to
         a given symbol. This name is available in every scopes.
 
         Examples:
@@ -245,6 +246,34 @@ class ClopureRunner(object):
         if not isinstance(name, ClopureSymbol):
             raise ClopureRuntimeError("%s is not a symbol" % str(name))
         self.global_vars[name.symbol] = self.evaluate(expression, local_vars=local_vars)
+
+
+    def clopure_let(self, var_set, *args, local_vars):
+        """Evaluates expression and binds it to a local name.
+
+        This function takes 1 or more arguments. The first one is a list, and
+        others are expressions. The list contains symbols in odd positions and
+        expressions in even positions. Expressions are binded to symbols that is
+        only available in the let function.
+
+        Examples:
+            (def x 5) (+ (let [x 2 y 3] (print (- x y)) (* x y)) x)
+                                ; => 11
+                                ; (with printing -1)
+        """
+        ret = None
+        if not isinstance(var_set, list):
+            raise ClopureRuntimeError("the first argument must be a vector")
+        if len(var_set) % 2 != 0:
+            raise ClopureRuntimeError("the first argument must contain even number of items")
+        new_local_vars = local_vars.copy()
+        for i in range(0, len(var_set), 2):
+            if not isinstance(var_set[i], ClopureSymbol):
+                raise ClopureRuntimeError("%s is not a symbol" % str(var_set[i]))
+            new_local_vars[var_set[i].symbol] = self.evaluate(var_set[i + 1], local_vars=local_vars)
+        for arg in args:
+            ret = self.evaluate(arg, local_vars=new_local_vars)
+        return ret
 
 
     def clopure_fn(self, *args, local_vars):
