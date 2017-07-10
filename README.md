@@ -4,6 +4,10 @@ Multi-processing supported functional language implemented in Python
 ## Install
 
 ```
+$ sudo pip3 install clopure
+```
+or
+```
 $ git clone https://github.com/vbkaisetsu/clopure.git
 $ cd clopure
 $ ./setup.py test

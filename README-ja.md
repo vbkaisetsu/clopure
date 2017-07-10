@@ -4,6 +4,10 @@ Pythonで実装されたマルチプロセッシング対応関数型言語
 ## インストール
 
 ```
+$ sudo pip3 install clopure
+```
+または
+```
 $ git clone https://github.com/vbkaisetsu/clopure.git
 $ cd clopure
 $ ./setup.py test
