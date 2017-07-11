@@ -204,6 +204,10 @@ class TestUnit(unittest.TestCase):
         tree = self.parser.parse_line(code)
         result = self.runner.evaluate(tree[0])
         self.assertEqual(result, 435)
+        code = "(reduce #(* (+ %1 1) %2) 6 [5 4 3])"
+        tree = self.parser.parse_line(code)
+        result = self.runner.evaluate(tree[0])
+        self.assertEqual(result, 435)
         code = "(reduce #(* (+ %1 1) %2) [4 5])"
         tree = self.parser.parse_line(code)
         result = self.runner.evaluate(tree[0])

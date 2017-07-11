@@ -1,5 +1,6 @@
 import collections
 import itertools
+import functools
 import traceback
 import sys
 
@@ -46,7 +47,7 @@ class EOFMessage(object):
     pass
 
 
-class ReducedObject(object):
+class ReducedException(Exception):
     def __init__(self, value):
         self.value = value
 
@@ -502,29 +503,27 @@ class ClopureRunner(object):
             (reduce #(.+ (list (reversed %1)) (arg-list %2)) [] (range 10))
                         ; => [8, 6, 4, 2, 0, 1, 3, 5, 7, 9]
         """
-        if len(args) == 2:
-            first = args[0]
-            g = iter(self.evaluate(args[1], local_vars=local_vars))
-        elif len(args) == 1:
-            g = iter(self.evaluate(args[0], local_vars=local_vars))
-            try:
-                first = next(g)
-            except StopIteration:
-                first = self.evaluate((fn,), local_vars=local_vars)
-                return self.evaluate(first.value, local_vars=local_vars) if isinstance(first, ReducedObject) else first
-        else:
-            raise ClopureRuntimeError("reduce takes 2 or 3 arguments")
+        def reduce_fn(a, b):
+            return self.evaluate((fn, a, b), local_vars=local_vars)
         try:
-            first = self.evaluate((fn, first, next(g)), local_vars=local_vars)
-            if isinstance(first, ReducedObject):
-                return self.evaluate(first.value, local_vars=local_vars)
-        except StopIteration:
-            return first
-        for item in g:
-            first = self.evaluate((fn, first, item), local_vars=local_vars)
-            if isinstance(first, ReducedObject):
-                return self.evaluate(first.value, local_vars=local_vars)
-        return first
+            if len(args) == 2:
+                g = iter(self.evaluate(args[1], local_vars=local_vars))
+                default = args[0]
+            elif len(args) == 1:
+                g = iter(self.evaluate(args[0], local_vars=local_vars))
+                try:
+                    default = next(g)
+                except StopIteration:
+                    return self.evaluate((fn,), local_vars=local_vars)
+            else:
+                raise ClopureRuntimeError("reduce takes 2 or 3 arguments")
+            fn = self.evaluate(fn, local_vars=local_vars)
+            if isinstance(fn, ClopureFunction) or fn in self.core_functions.values():
+                return functools.reduce(reduce_fn, g, default)
+            else:
+                return functools.reduce(fn, g, default)
+        except ReducedException as e:
+            return self.evaluate(e.value, local_vars=local_vars)
 
 
     def clopure_reduced(self, msg, local_vars):
@@ -539,7 +538,7 @@ class ClopureRunner(object):
             (reduce f (range 10)) ; => 'max'
             (reduce f (range 11)) ; => 'max'
         """
-        return ReducedObject(msg)
+        raise ReducedException(msg)
 
 
     def clopure_filter(self, fn, seq, local_vars):
